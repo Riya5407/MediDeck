@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query, status
 from psycopg import AsyncConnection
 
 from app.db import get_db
+from app.auth import require_roles
 from app.schemas.batches import (
     BatchCreate,
     BatchUpdate,
@@ -22,6 +23,7 @@ async def list_batches(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """List batches ordered soonest expiry first, with summary counts."""
     return await batch_repo.get_batches(
@@ -33,6 +35,7 @@ async def list_batches(
 async def create_batch(
     payload: BatchCreate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Create a new medicine batch."""
     return await batch_repo.create_batch(conn, payload.model_dump())
@@ -43,6 +46,7 @@ async def update_batch(
     batch_no: int,
     payload: BatchUpdate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Update a batch."""
     return await batch_repo.update_batch(conn, batch_no, payload.model_dump())
@@ -52,7 +56,7 @@ async def update_batch(
 async def delete_batch(
     batch_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Delete a batch. Fails with 409 if sold from."""
     await batch_repo.delete_batch(conn, batch_no)
-

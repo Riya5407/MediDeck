@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from psycopg import AsyncConnection
 
 from app.db import get_db
+from app.auth import require_roles
 from app.schemas.sales import (
     PosMedicineOut,
     SaleCreate,
@@ -20,6 +21,7 @@ async def pos_medicines(
     q: Optional[str] = Query(None, description="Search query"),
     limit: int = Query(20, ge=1, le=100),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """POS medicine search returning sellable batches with stock, soonest expiry first."""
     return await sales_repo.search_pos_medicines(conn, q=q, limit=limit)
@@ -33,6 +35,7 @@ async def list_sales(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """List sales bills paginated, newest first."""
     return await sales_repo.get_sales(
@@ -44,6 +47,7 @@ async def list_sales(
 async def get_sale(
     bill_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """Get sale detail with lines and discount percentages."""
     return await sales_repo.get_sale_by_id(conn, bill_no)
@@ -53,6 +57,7 @@ async def get_sale(
 async def create_sale(
     payload: SaleCreate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """Create bill. Triggers reduce stock and calculate total_amt."""
     return await sales_repo.create_sale(conn, payload.model_dump())
@@ -62,7 +67,7 @@ async def create_sale(
 async def cancel_sale(
     bill_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin")),
 ):
-    """Cancel bill. Deletes lines first (trigger restores stock), then sale."""
+    """Cancel bill. Only admin is permitted. Deletes lines first (trigger restores stock), then sale."""
     await sales_repo.cancel_sale(conn, bill_no)
-

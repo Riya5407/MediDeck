@@ -13,11 +13,13 @@ import {
   BarChart3,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useCurrentUser } from "../api/auth";
 
 interface NavItem {
   label: string;
   to: string;
   icon: LucideIcon;
+  roles?: ("admin" | "pharmacist" | "cashier")[];
 }
 
 const navItems: NavItem[] = [
@@ -27,14 +29,21 @@ const navItems: NavItem[] = [
   { label: "New Sale", to: "/new-sale", icon: ShoppingCart },
   { label: "Sales History", to: "/sales", icon: ClipboardList },
   { label: "Customers", to: "/customers", icon: Users },
-  { label: "Suppliers", to: "/suppliers", icon: Truck },
-  { label: "Purchase Orders", to: "/purchase-orders", icon: FileBox },
-  { label: "Prescriptions", to: "/prescriptions", icon: FileText },
-  { label: "Employees", to: "/employees", icon: UserCog },
+  { label: "Suppliers", to: "/suppliers", icon: Truck, roles: ["admin", "pharmacist"] },
+  { label: "Purchase Orders", to: "/purchase-orders", icon: FileBox, roles: ["admin", "pharmacist"] },
+  { label: "Prescriptions", to: "/prescriptions", icon: FileText, roles: ["admin", "pharmacist"] },
+  { label: "Employees", to: "/employees", icon: UserCog, roles: ["admin"] },
   { label: "Reports", to: "/reports", icon: BarChart3 },
 ];
 
 export default function Sidebar() {
+  const { data: user } = useCurrentUser();
+  const role = user?.role || "admin";
+
+  const visibleNavItems = navItems.filter(
+    (item) => !item.roles || item.roles.includes(role)
+  );
+
   return (
     <aside
       className="fixed top-0 left-0 h-screen flex flex-col bg-primary text-white"
@@ -54,17 +63,18 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 pb-4">
+      <nav className="flex-1 overflow-y-auto px-3 pb-4 pt-2">
         <ul className="space-y-1">
-          {navItems.map(({ label, to, icon: Icon }) => (
+          {visibleNavItems.map(({ label, to, icon: Icon }) => (
             <li key={to}>
               <NavLink
                 to={to}
                 end={to === "/"}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                    ? "bg-white/20 text-white"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
                   }`
                 }
               >
@@ -78,4 +88,3 @@ export default function Sidebar() {
     </aside>
   );
 }
-

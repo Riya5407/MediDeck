@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 from psycopg import AsyncConnection
 
 from app.db import get_db
+from app.auth import require_roles
 from app.repositories import reports as reports_repo
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
@@ -41,6 +42,7 @@ async def sales_by_date(
     to_date: Optional[date] = Query(None, alias="to"),
     format: Optional[str] = Query(None),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "cashier")),
 ):
     df, dt = _default_dates()
     data = await reports_repo.sales_by_date(
@@ -60,6 +62,7 @@ async def top_medicines(
     to_date: Optional[date] = Query(None, alias="to"),
     format: Optional[str] = Query(None),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "cashier")),
 ):
     df, dt = _default_dates()
     data = await reports_repo.top_medicines(
@@ -77,6 +80,7 @@ async def top_medicines(
 async def expired_stock(
     format: Optional[str] = Query(None),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     data = await reports_repo.expired_stock(conn)
     if format == "csv":
@@ -91,6 +95,7 @@ async def purchases_by_supplier(
     to_date: Optional[date] = Query(None, alias="to"),
     format: Optional[str] = Query(None),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin")),
 ):
     df, dt = _default_dates()
     data = await reports_repo.purchases_by_supplier(
@@ -101,4 +106,3 @@ async def purchases_by_supplier(
     if format == "csv":
         return _csv_response([dict(r) for r in data], "purchases-by-supplier.csv")
     return data
-

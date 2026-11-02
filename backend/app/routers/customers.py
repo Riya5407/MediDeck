@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query, status
 from psycopg import AsyncConnection
 
 from app.db import get_db
+from app.auth import require_roles
 from app.schemas.customers import (
     CustomerCreate,
     CustomerUpdate,
@@ -21,6 +22,7 @@ async def list_customers(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """List customers with search and pagination."""
     return await cust_repo.get_customers(conn, search=search, page=page, page_size=page_size)
@@ -30,6 +32,7 @@ async def list_customers(
 async def get_customer(
     cust_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """Get single customer by ID."""
     return await cust_repo.get_customer_by_id(conn, cust_no)
@@ -39,6 +42,7 @@ async def get_customer(
 async def create_customer(
     payload: CustomerCreate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """Create a new customer."""
     return await cust_repo.create_customer(conn, payload.model_dump())
@@ -49,6 +53,7 @@ async def update_customer(
     cust_no: int,
     payload: CustomerUpdate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """Update a customer."""
     return await cust_repo.update_customer(conn, cust_no, payload.model_dump())
@@ -58,6 +63,7 @@ async def update_customer(
 async def delete_customer(
     cust_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """Delete a customer. 409 if they have bills or prescriptions."""
     await cust_repo.delete_customer(conn, cust_no)
@@ -67,7 +73,7 @@ async def delete_customer(
 async def get_customer_history(
     cust_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """Get customer purchase and prescription history."""
     return await cust_repo.get_customer_history(conn, cust_no)
-

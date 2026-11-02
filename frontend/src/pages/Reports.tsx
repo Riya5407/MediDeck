@@ -295,7 +295,7 @@ export default function Reports() {
       <Section
         title="Expired Stock"
         icon={<XCircle className="w-4 h-4 text-red" />}
-        csvHref="/api/reports/expired-stock?format=csv"
+        csvHref={csvUrl("expired-stock", {})}
       >
         {expiredQuery.isLoading ? (
           <LoadingSkeleton rows={4} />

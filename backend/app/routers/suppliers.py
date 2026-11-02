@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query, status
 from psycopg import AsyncConnection
 
 from app.db import get_db
+from app.auth import require_roles
 from app.schemas.suppliers import (
     SupplierCreate,
     SupplierUpdate,
@@ -20,6 +21,7 @@ async def list_suppliers(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """List suppliers with aggregated phones and pagination."""
     return await sup_repo.get_suppliers(conn, search=search, page=page, page_size=page_size)
@@ -29,6 +31,7 @@ async def list_suppliers(
 async def get_supplier(
     sup_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Get single supplier by ID."""
     return await sup_repo.get_supplier_by_id(conn, sup_no)
@@ -38,6 +41,7 @@ async def get_supplier(
 async def create_supplier(
     payload: SupplierCreate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Create a new supplier with optional phones in single transaction."""
     return await sup_repo.create_supplier(conn, payload.model_dump())
@@ -48,6 +52,7 @@ async def update_supplier(
     sup_no: int,
     payload: SupplierUpdate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Update supplier and replace phone list."""
     return await sup_repo.update_supplier(conn, sup_no, payload.model_dump())
@@ -57,7 +62,7 @@ async def update_supplier(
 async def delete_supplier(
     sup_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Delete supplier and phones. 409 if purchase orders exist."""
     await sup_repo.delete_supplier(conn, sup_no)
-

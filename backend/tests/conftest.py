@@ -19,6 +19,7 @@ from psycopg.rows import dict_row
 
 from app.config import settings
 from app.db import get_db
+from app.auth import create_access_token
 from app.main import app
 
 
@@ -77,15 +78,18 @@ async def db_conn() -> AsyncGenerator[object, None]:
 
 @pytest_asyncio.fixture()
 async def client(db_conn: object) -> AsyncGenerator[AsyncClient, None]:
-    """HTTP test client using the transaction connection (rolled back per test)."""
+    """HTTP test client using the transaction connection (rolled back per test) with admin credentials."""
 
     async def _override_get_db():
         yield db_conn
 
     app.dependency_overrides[get_db] = _override_get_db
 
+    admin_token = create_access_token({"username": "admin", "role": "admin"})
+    headers = {"Authorization": f"Bearer {admin_token}"}
+
     transport = ASGITransport(app=app, raise_app_exceptions=False)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+    async with AsyncClient(transport=transport, base_url="http://test", headers=headers) as ac:
         yield ac
 
     app.dependency_overrides.clear()

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query, status
 from psycopg import AsyncConnection
 
 from app.db import get_db
+from app.auth import require_roles
 from app.schemas.medicines import (
     MedicineCreate,
     MedicineUpdate,
@@ -23,6 +24,7 @@ async def list_medicines(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """List medicines with filters and pagination."""
     return await med_repo.get_medicines(
@@ -34,6 +36,7 @@ async def list_medicines(
 async def get_medicine(
     med_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist", "cashier")),
 ):
     """Get single medicine by ID with its batches."""
     return await med_repo.get_medicine_by_id(conn, med_no)
@@ -43,6 +46,7 @@ async def get_medicine(
 async def create_medicine(
     payload: MedicineCreate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Create a new medicine."""
     return await med_repo.create_medicine(conn, payload.model_dump())
@@ -53,6 +57,7 @@ async def update_medicine(
     med_no: int,
     payload: MedicineUpdate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Update an existing medicine."""
     return await med_repo.update_medicine(conn, med_no, payload.model_dump())
@@ -62,7 +67,7 @@ async def update_medicine(
 async def delete_medicine(
     med_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Delete a medicine. Fails with 409 if referenced by batches, sales, etc."""
     await med_repo.delete_medicine(conn, med_no)
-

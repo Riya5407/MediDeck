@@ -1,7 +1,7 @@
 """Centralised PostgreSQL → HTTP error mapping."""
 import logging
 
-from fastapi import Request
+from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 from psycopg.errors import (
     RaiseException,         # P0001
@@ -20,6 +20,13 @@ class NotFoundError(Exception):
 
 async def db_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Map database exceptions to the HTTP responses specified in API_SPEC."""
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+            headers=getattr(exc, "headers", None),
+        )
+
     if isinstance(exc, NotFoundError):
         return JSONResponse(status_code=404, content={"detail": str(exc) or "Not found"})
 

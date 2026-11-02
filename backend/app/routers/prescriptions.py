@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from psycopg import AsyncConnection
 
 from app.db import get_db
+from app.auth import require_roles
 from app.schemas.prescriptions import (
     PrescriptionCreate,
     PrescriptionUpdate,
@@ -24,6 +25,7 @@ async def list_prescriptions(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """List prescriptions paginated."""
     return await pres_repo.get_prescriptions(
@@ -35,6 +37,7 @@ async def list_prescriptions(
 async def get_prescription(
     pres_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Get single prescription with line items."""
     return await pres_repo.get_prescription_by_id(conn, pres_no)
@@ -44,6 +47,7 @@ async def get_prescription(
 async def create_prescription(
     payload: PrescriptionCreate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Create a new prescription record."""
     return await pres_repo.create_prescription(conn, payload.model_dump())
@@ -54,6 +58,7 @@ async def update_prescription(
     pres_no: int,
     payload: PrescriptionUpdate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Update prescription and replace its items."""
     return await pres_repo.update_prescription(conn, pres_no, payload.model_dump())
@@ -63,7 +68,7 @@ async def update_prescription(
 async def delete_prescription(
     pres_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Delete prescription and details."""
     await pres_repo.delete_prescription(conn, pres_no)
-

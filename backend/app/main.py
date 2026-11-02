@@ -15,6 +15,7 @@ from app.config import settings
 from app.db import create_pool
 from app.errors import NotFoundError, db_exception_handler
 from app.routers import (
+    auth,
     meta,
     medicines,
     batches,
@@ -34,7 +35,7 @@ async def lifespan(app: FastAPI):
     """Create the connection pool on startup if DB is reachable, close it on shutdown."""
     import asyncio
     try:
-        app.state.pool = await asyncio.wait_for(create_pool(settings.DATABASE_URL), timeout=2.0)
+        app.state.pool = await asyncio.wait_for(create_pool(settings.DATABASE_URL), timeout=15.0)
     except Exception:
         app.state.pool = None
     yield
@@ -42,13 +43,14 @@ async def lifespan(app: FastAPI):
         await app.state.pool.close()
 
 
-app = FastAPI(title="MediDesk API", lifespan=lifespan)
+app = FastAPI(title="MediDeck API", lifespan=lifespan)
 
-# CORS
+# CORS configuration supporting credentials (cookies)
 origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -59,6 +61,7 @@ app.add_exception_handler(DatabaseError, db_exception_handler)
 app.add_exception_handler(Exception, db_exception_handler)
 
 # Routers
+app.include_router(auth.router)
 app.include_router(meta.router)
 app.include_router(medicines.router)
 app.include_router(batches.router)

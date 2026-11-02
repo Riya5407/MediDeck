@@ -9,15 +9,18 @@ from fastapi import Request
 
 
 async def create_pool(dsn: str) -> AsyncConnectionPool:
-    """Create and return an async connection pool."""
+    """Create and return an async connection pool configured for resilience with serverless databases."""
     pool = AsyncConnectionPool(
         conninfo=dsn,
         min_size=1,
         max_size=10,
         open=False,
+        check=AsyncConnectionPool.check_connection,
+        max_idle=300.0,
+        max_lifetime=1800.0,
         kwargs={"row_factory": dict_row, "autocommit": False},
     )
-    await pool.open()
+    await pool.open(wait=False)
     return pool
 
 

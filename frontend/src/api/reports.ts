@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { request } from "./client";
+import { request, API_BASE } from "./client";
 
 export interface SalesByDateRow {
   date: string;
@@ -90,6 +90,6 @@ export function csvUrl(endpoint: string, params: ReportParams & { limit?: number
   if (params.to) qs.set("to", params.to);
   if (params.limit) qs.set("limit", params.limit.toString());
   qs.set("format", "csv");
-  return `/api/reports/${endpoint}?${qs.toString()}`;
+  return `${API_BASE}/api/reports/${endpoint}?${qs.toString()}`;
 }
 

@@ -17,6 +17,9 @@ build/
 backend/.env
 frontend/.env
 
+# Database migration backups (contain data — never commit)
+migration/
+
 # Python Cache & Bytecode
 __pycache__/
 *.py[cod]

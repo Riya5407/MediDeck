@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from psycopg import AsyncConnection
 
 from app.db import get_db
+from app.auth import require_roles
 from app.schemas.purchase_orders import (
     POCreate,
     POStatusUpdate,
@@ -26,6 +27,7 @@ async def list_purchase_orders(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """List purchase orders newest first, paginated."""
     return await po_repo.get_purchase_orders(
@@ -37,6 +39,7 @@ async def list_purchase_orders(
 async def get_purchase_order(
     pur_no: int,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Get purchase order with lines."""
     return await po_repo.get_po_by_id(conn, pur_no)
@@ -46,6 +49,7 @@ async def get_purchase_order(
 async def create_purchase_order(
     payload: POCreate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Create purchase order in Pending status."""
     return await po_repo.create_po(conn, payload.model_dump())
@@ -56,6 +60,7 @@ async def update_po_status(
     pur_no: int,
     payload: POStatusUpdate,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Cancel a purchase order (allowed only if Pending)."""
     return await po_repo.cancel_po(conn, pur_no)
@@ -66,7 +71,7 @@ async def receive_purchase_order(
     pur_no: int,
     payload: POReceiveInput,
     conn: AsyncConnection = Depends(get_db),
+    _user: dict = Depends(require_roles("admin", "pharmacist")),
 ):
     """Receive order lines into inventory batches and transition order to Delivered."""
     return await po_repo.receive_po(conn, pur_no, payload.model_dump())
-

@@ -155,3 +155,4 @@ Use a managed cloud PostgreSQL provider such as **Neon.tech**, **Supabase**, or 
   cd frontend
   npm run build
   ```
+
