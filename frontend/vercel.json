@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/api/:match*",
-      "destination": "https://your-backend-api.onrender.com/api/:match*"
+      "source": "/api/:path*",
+      "destination": "https://medideck-api.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
