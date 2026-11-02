@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     LOW_STOCK_THRESHOLD: int = 20
     EXPIRY_WARNING_DAYS: int = 30
     PAYMENT_MODES: str = "Cash,Card,UPI"
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://medi-deck.vercel.app"
 
     # Environment mode (development / production)
     ENVIRONMENT: str = "development"

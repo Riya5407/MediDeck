@@ -126,8 +126,48 @@ async def test_logout_clears_cookies(client: AsyncClient):
     assert len(access_deleted) > 0
     assert len(csrf_deleted) > 0
     assert any("path=/" in c.lower() for c in access_deleted)
-    assert any("samesite=lax" in c.lower() for c in access_deleted)
     assert any("httponly" in c.lower() for c in access_deleted)
+
+
+@pytest.mark.asyncio
+async def test_cookie_attributes_in_production_vs_development(monkeypatch):
+    """Verify cookies use SameSite=None; Secure in production, and SameSite=Lax in development."""
+    from fastapi import Response
+    from app.auth import set_auth_cookies, clear_auth_cookies, get_cookie_security_params
+    from app.config import settings
+
+    # 1. Development check
+    monkeypatch.setattr(settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(settings, "COOKIE_SECURE", False)
+    sec_dev, same_dev = get_cookie_security_params()
+    assert sec_dev is False
+    assert same_dev == "lax"
+
+    res_dev = Response()
+    set_auth_cookies(res_dev, "token123", "csrf123")
+    dev_cookies = res_dev.headers.getlist("set-cookie")
+    assert any("samesite=lax" in c.lower() for c in dev_cookies)
+    assert not any("secure" in c.lower() for c in dev_cookies)
+
+    # 2. Production check (ENVIRONMENT='production' or COOKIE_SECURE=True)
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "COOKIE_SECURE", True)
+    sec_prod, same_prod = get_cookie_security_params()
+    assert sec_prod is True
+    assert same_prod == "none"
+
+    res_prod = Response()
+    set_auth_cookies(res_prod, "token123", "csrf123")
+    prod_cookies = res_prod.headers.getlist("set-cookie")
+    assert any("samesite=none" in c.lower() for c in prod_cookies)
+    assert any("secure" in c.lower() for c in prod_cookies)
+
+    # Check clear_auth_cookies in production
+    res_clear = Response()
+    clear_auth_cookies(res_clear)
+    clear_cookies = res_clear.headers.getlist("set-cookie")
+    assert any("samesite=none" in c.lower() for c in clear_cookies)
+    assert any("secure" in c.lower() for c in clear_cookies)
 
 
 @pytest.mark.asyncio

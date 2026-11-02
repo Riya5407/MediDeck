@@ -77,15 +77,32 @@ def generate_csrf_token() -> str:
     return secrets.token_urlsafe(32)
 
 
+def get_cookie_security_params() -> tuple[bool, str]:
+    """Determine (secure, samesite) settings based on environment.
+    
+    In production / when COOKIE_SECURE is enabled, cookies are transmitted cross-site
+    (e.g., frontend on Vercel, backend on Render), which requires SameSite=None and Secure=True.
+    In local development, SameSite=Lax and Secure=False allows plain HTTP localhost testing.
+    """
+    is_prod = (
+        settings.ENVIRONMENT.lower() in ("production", "prod")
+        or settings.COOKIE_SECURE
+    )
+    if is_prod:
+        return True, "none"
+    return False, "lax"
+
+
 def set_auth_cookies(response: Response, token: str, csrf_token: str) -> None:
     """Set secure HttpOnly authentication cookie and readable CSRF cookie."""
     max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    secure, samesite = get_cookie_security_params()
     response.set_cookie(
         key="access_token",
         value=token,
         httponly=True,
-        secure=settings.COOKIE_SECURE,
-        samesite="lax",
+        secure=secure,
+        samesite=samesite,
         max_age=max_age,
         path="/",
     )
@@ -93,8 +110,8 @@ def set_auth_cookies(response: Response, token: str, csrf_token: str) -> None:
         key="csrf_token",
         value=csrf_token,
         httponly=False,  # JavaScript must be able to read this to include in X-CSRF-Token header
-        secure=settings.COOKIE_SECURE,
-        samesite="lax",
+        secure=secure,
+        samesite=samesite,
         max_age=max_age,
         path="/",
     )
@@ -102,19 +119,20 @@ def set_auth_cookies(response: Response, token: str, csrf_token: str) -> None:
 
 def clear_auth_cookies(response: Response) -> None:
     """Clear auth and CSRF cookies, matching original creation attributes."""
+    secure, samesite = get_cookie_security_params()
     response.delete_cookie(
         key="access_token",
         path="/",
         httponly=True,
-        secure=settings.COOKIE_SECURE,
-        samesite="lax",
+        secure=secure,
+        samesite=samesite,
     )
     response.delete_cookie(
         key="csrf_token",
         path="/",
         httponly=False,
-        secure=settings.COOKIE_SECURE,
-        samesite="lax",
+        secure=secure,
+        samesite=samesite,
     )
 
 
