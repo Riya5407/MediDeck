@@ -1,0 +1,16 @@
+import sys
+import asyncio
+import selectors
+
+if __name__ == "__main__":
+    import uvicorn
+    from app.main import app
+    
+    async def main():
+        config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="info")
+        server = uvicorn.Server(config)
+        await server.serve()
+
+    selector = selectors.SelectSelector()
+    loop = asyncio.SelectorEventLoop(selector)
+    asyncio.run(main(), loop_factory=lambda: loop)

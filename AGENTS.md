@@ -41,4 +41,34 @@ docs/      API_SPEC.md  db/  design/  BUILD_PLAN.md
 - Final message lists what was built and any place you deviated from the spec (ideally none).
 
 ## Commands
-The foundation session records the exact run, test, and build commands here once they exist.
+All commands use Windows PowerShell syntax (using `;` as command separator).
+
+### Backend (from inside `backend/`)
+```powershell
+# Create virtual environment (Python 3.13)
+py -3.13 -m venv .venv
+
+# Install dependencies
+.\.venv\Scripts\pip.exe install -r requirements.txt
+
+# Run development server
+.\.venv\Scripts\python.exe run_server.py
+
+# Run tests
+.\.venv\Scripts\pytest.exe -v
+```
+
+### Frontend (from inside `frontend/`)
+```powershell
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Run test suite
+npm test
+
+# Build for production
+npm run build
+```
